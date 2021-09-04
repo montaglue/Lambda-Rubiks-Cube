@@ -1,18 +1,13 @@
+use std::rc::Rc;
+
+use lalrpop_util::ParseError;
+
+use crate::interpreter::value::Value;
+
 #[derive(Debug)]
-pub struct CompilerError {
-    text: String,
+pub enum CompilerError {
+    ParserError(ParseError<usize, (usize, String), String>),
+    EvaluationError,
+    TypingError(Rc<Value>, Rc<Value>),
+    Undefined,
 }
-
-impl CompilerError {
-    pub fn new(text: String) -> CompilerError {
-        CompilerError { text }
-    }
-
-    pub fn str<'l>(text: &'l str) -> CompilerError {
-        CompilerError {
-            text: String::from(text),
-        }
-    }
-}
-
-pub type Result<T> = std::result::Result<T, CompilerError>;

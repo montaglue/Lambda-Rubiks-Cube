@@ -1,0 +1,54 @@
+use std::str::FromStr;
+use std::rc::Rc; 
+
+use crate::interior_representation::abstract_syntax_tree::{Term, RawTerm, proj_fold, app_fold};
+
+grammar;
+
+pub Term: Rc<Term> = {
+    <Term1> ":" <Term1> => Rc::new(Term(RawTerm::Type(<>))),
+    Term1,
+}
+
+Term1: Rc<Term> = {
+    <Term2> "," <Term1> => Rc::new(Term(RawTerm::Pair(<>))),
+    Term2,
+};
+
+Term2: Rc<Term> = {
+    "\\" <Term2> => Rc::new(Term(RawTerm::Lam(<>))),
+    Term3,
+};
+
+Term3: Rc<Term> = {
+    <Term4> "=>" <Term3> => Rc::new(Term(RawTerm::Pi(<>))),
+    Term4,
+};
+
+Term4: Rc<Term> = {
+    <Term5> "@" <Term4> => Rc::new(Term(RawTerm::Si(<>))),
+    Term5,
+};
+
+Term5: Rc<Term> = Term6+ => app_fold(<>);
+
+Term6: Rc<Term> = Term7 Proj => proj_fold(<>);
+
+Term7: Rc<Term> = {
+    Id,
+    Bvar,
+    Universe,
+    Grp,
+};
+
+Id: Rc<Term> = r"[a-zA-Z]" => Rc::new(Term(RawTerm::Free(Rc::new(<>.to_string()))));
+
+Bvar: Rc<Term> = "#" <Num>  => Rc::new(Term(RawTerm::Bounded(<>)));
+
+Universe: Rc<Term> = "*" => Rc::new(Term(RawTerm::Universe));
+
+Grp: Rc<Term> = "(" <Term> ")";
+
+Proj: Vec<usize> = ("." <Num>)*;
+
+Num: usize = r"(0|[1-9][0-9]*)" => usize::from_str(<>).unwrap();
